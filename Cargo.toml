@@ -7,4 +7,5 @@ edition = "2021"
 console_error_panic_hook = "0.1.7"
 leptos = { version = "0.7.8", features = ["csr"] }
 leptos-use = "0.15.7"
+thiserror = "2.0.12"
 web-time = "1.1.0"

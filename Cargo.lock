@@ -120,6 +120,7 @@ dependencies = [
  "console_error_panic_hook",
  "leptos",
  "leptos-use",
+ "thiserror 2.0.12",
  "web-time",
 ]
 
