@@ -55,7 +55,9 @@ fn App() -> impl IntoView {
     });
 
     view! {
-        <p>Total Beats: {move || timestamps.get().len()} </p>
-        <p>Average BPM: {move || bpm_avg.get()} </p>
+        <main class="m-auto max-w-3xl text-center font-mono text-3xl">
+            <p>"Total Beats: "{move || timestamps.get().len()}</p>
+            <p>"Average BPM: "{move || bpm_avg.get()}</p>
+        </main>
     }
 }
