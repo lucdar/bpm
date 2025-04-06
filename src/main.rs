@@ -13,8 +13,7 @@ fn main() {
 
 /// Helper function to determine if the supplied keycode should add another BPM tap
 fn is_tap_key(key_code: &u32) -> bool {
-    // List of disabled keys
-    ![
+    let disabled_keys = [
         0,  // Unidentified
         12, // Clear
         16, // Shift
@@ -24,8 +23,8 @@ fn is_tap_key(key_code: &u32) -> bool {
         27, // Escape
         91, // Meta
         92, // Meta
-    ]
-    .contains(key_code)
+    ];
+    !disabled_keys.contains(key_code)
 }
 
 #[component]
@@ -41,7 +40,7 @@ fn App() -> impl IntoView {
         // log!("{evt:?}");
         let now = Instant::now();
         if is_tap_key(&evt.key_code()) {
-            if last_tap.elapsed().as_secs() > RESET_SECS {
+            if last_tap.elapsed().as_secs() >= RESET_SECS {
                 set_timestamps.set(vec![now]);
             } else {
                 set_timestamps.write().push(now);
