@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use thiserror::Error;
 use web_time::Instant;
 
@@ -24,15 +25,13 @@ pub fn direct_count(timestamps: &[Instant]) -> Result<f64, BpmCalculationError> 
 }
 
 pub fn simple_regression(timestamps: &[Instant]) -> Result<f64, BpmCalculationError> {
+    // Slope of least squares regression line is equal to Cov(x, y) / Var(x)
+    // https://seismo.berkeley.edu/~kirchner/eps_120/Toolkits/Toolkit_10.pdf
     if timestamps.len() < 2 {
         return Err(BpmCalculationError::InsufficientData);
     }
-
     let start = timestamps.first().expect("timestamps should not be empty");
     let n = timestamps.len() as f64;
-
-    // Slope of least squares regression line is equal to Cov(x, y) / Var(x)
-    // https://seismo.berkeley.edu/~kirchner/eps_120/Toolkits/Toolkit_10.pdf
 
     let mean_x = timestamps
         .iter()
@@ -60,5 +59,22 @@ pub fn simple_regression(timestamps: &[Instant]) -> Result<f64, BpmCalculationEr
 
 pub fn thiel_sen(timestamps: &[Instant]) -> Result<f64, BpmCalculationError> {
     // The median of the slopes between every pair of points
-    todo!("Not Implemented");
+    // Increased robustness, asymptotic efficiency (data required to converge)
+    if timestamps.len() < 2 {
+        return Err(BpmCalculationError::InsufficientData);
+    }
+    let start = timestamps.first().expect("timestamps should not be empty");
+
+    let mut slopes: Vec<_> = timestamps
+        .iter()
+        .map(|ts| ts.duration_since(*start).as_millis())
+        .enumerate()
+        .tuple_combinations()
+        // indices (number of beats) are the y-values
+        .map(|((y1, x1), (y2, x2))| (y2 - y1) as f64 / (x2 - x1) as f64)
+        .collect();
+    let mid = slopes.len() / 2;
+    let (_left, median, _right) = slopes.select_nth_unstable_by(mid, |a, b| a.total_cmp(b));
+
+    Ok(*median * 60_000_f64)
 }
