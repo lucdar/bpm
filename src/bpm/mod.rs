@@ -13,10 +13,9 @@ pub fn direct_count(timestamps: &[Instant]) -> Result<f64, BpmCalculationError> 
         return Err(BpmCalculationError::InsufficientData);
     }
 
-    let start = timestamps.first().expect("timestamps should not be empty");
-    let end = timestamps.last().expect("timestamps should not be empty");
-    let delta = end.duration_since(*start);
-
+    let start = timestamps[0];
+    let end = timestamps.last().unwrap();
+    let delta = end.duration_since(start);
     // len - 1 is used so only one of start/end is counted
     let count = (timestamps.len() - 1) as f64;
     let bpm = count * 60_000_f64 / delta.as_millis() as f64;
@@ -30,29 +29,25 @@ pub fn simple_regression(timestamps: &[Instant]) -> Result<f64, BpmCalculationEr
     if timestamps.len() < 2 {
         return Err(BpmCalculationError::InsufficientData);
     }
-    let start = timestamps.first().expect("timestamps should not be empty");
+
+    let start = timestamps[0];
     let n = timestamps.len() as f64;
 
-    let mean_x = timestamps
-        .iter()
-        .map(|ts| ts.duration_since(*start).as_millis())
-        .sum::<u128>() as f64
-        / n;
+    let (sum_x, sum_x_squared, sum_xy) =
+        timestamps
+            .iter()
+            .enumerate()
+            .fold((0_u128, 0_u128, 0_u128), |(sx, sxx, sxy), (i, ts)| {
+                let x = ts.duration_since(start).as_millis();
+                (sx + x, sxx + x * x, sxy + (i as u128) * x)
+            });
+
+    let mean_x = sum_x as f64 / n;
     let mean_y = (n - 1_f64) / 2_f64;
-    let sum_x_squared = timestamps
-        .iter()
-        .map(|ts| ts.duration_since(*start).as_millis())
-        .map(|ms| ms * ms)
-        .sum::<u128>() as f64;
-    let sum_xy = timestamps
-        .iter()
-        .map(|ts| ts.duration_since(*start).as_millis())
-        .enumerate()
-        .map(|(i, ms)| i as u128 * ms)
-        .sum::<u128>() as f64;
 
     // beats per millisecond
-    let slope = (sum_xy - n * mean_x * mean_y) / (sum_x_squared - n * mean_x * mean_x);
+    let slope =
+        (sum_xy as f64 - n * mean_x * mean_y) / (sum_x_squared as f64 - n * mean_x * mean_x);
 
     Ok(slope * 60_000_f64)
 }
@@ -60,14 +55,15 @@ pub fn simple_regression(timestamps: &[Instant]) -> Result<f64, BpmCalculationEr
 pub fn thiel_sen(timestamps: &[Instant]) -> Result<f64, BpmCalculationError> {
     // The median of the slopes between every pair of points
     // Increased robustness, asymptotic efficiency (data required to converge)
+    // https://en.wikipedia.org/wiki/Theil%E2%80%93Sen_estimator
     if timestamps.len() < 2 {
         return Err(BpmCalculationError::InsufficientData);
     }
-    let start = timestamps.first().expect("timestamps should not be empty");
+    let start = timestamps[0];
 
     let mut slopes: Vec<_> = timestamps
         .iter()
-        .map(|ts| ts.duration_since(*start).as_millis())
+        .map(|ts| ts.duration_since(start).as_millis())
         .enumerate()
         .tuple_combinations()
         // indices (number of beats) are the y-values
