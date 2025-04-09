@@ -2,7 +2,7 @@ use leptos::ev::{keydown, KeyboardEvent};
 use leptos::logging::log;
 use leptos::prelude::*;
 use leptos_use::{use_document, use_event_listener};
-use web_time::Instant;
+use web_time::{Duration, Instant};
 
 mod bpm;
 
@@ -27,58 +27,64 @@ fn is_tap_key(key_code: &u32) -> bool {
     !disabled_keys.contains(key_code)
 }
 
-fn display_bpm_signal(bpm: ReadSignal<Option<f64>>) -> String {
-    match bpm.get() {
-        Some(bpm) => format!("{bpm:.2}"),
-        None => "Not Enough Data".into(),
-    }
-}
-
 #[component]
 fn App() -> impl IntoView {
     const RESET_SECS: u64 = 2;
 
     let (timestamps, set_timestamps) = signal::<Vec<Instant>>(Vec::new());
-    let (direct_count, set_direct_count) = signal::<Option<f64>>(None);
-    let (simple_regression, set_simple_regression) = signal::<Option<f64>>(None);
-    let (thiel_sen, set_thiel_sen) = signal::<Option<f64>>(None);
-
-    let mut last_tap = Instant::now();
+    let (active_timeout, set_active_timeout) = signal::<Option<TimeoutHandle>>(None);
 
     let _cleanup = use_event_listener(use_document(), keydown, move |evt: KeyboardEvent| {
-        // log!("{evt:?}");
         let now = Instant::now();
-        if is_tap_key(&evt.key_code()) {
-            if last_tap.elapsed().as_secs() >= RESET_SECS {
-                set_timestamps.set(vec![now]);
-            } else {
-                set_timestamps.write().push(now);
-            }
-            set_direct_count.set(
-                bpm::direct_count(&timestamps.read())
-                    .inspect_err(|e| log!("{e:?}"))
-                    .ok(),
-            );
-            set_simple_regression.set(
-                bpm::simple_regression(&timestamps.read())
-                    .inspect_err(|e| log!("{e:?}"))
-                    .ok(),
-            );
-            set_thiel_sen.set(
-                bpm::thiel_sen(&timestamps.read())
-                    .inspect_err(|e| log!("{e:?}"))
-                    .ok(),
-            );
+        if !is_tap_key(&evt.key_code()) {
+            return;
         }
-        last_tap = now;
+        match active_timeout.get() {
+            Some(handle) => handle.clear(),
+            // clear timestamps if no active timeout
+            None => set_timestamps.set(Vec::new()),
+        }
+        let new_timeout = set_timeout_with_handle(
+            move || {
+                set_active_timeout.set(None);
+            },
+            Duration::from_secs(RESET_SECS),
+        )
+        .expect("Set timeout should not fail");
+        set_active_timeout.set(Some(new_timeout));
+        set_timestamps.write().push(now);
     });
 
     view! {
-        <main class="m-auto max-w-3xl text-center font-mono text-3xl">
+        <BpmTable timestamps />
+    }
+}
+
+#[component]
+fn BpmTable(timestamps: ReadSignal<Vec<Instant>>) -> impl IntoView {
+    // creates a <p> with the bpm calculated by the suppled function, labeled with the supplied label
+    macro_rules! render_bpm_metric {
+        ($label:expr, $algorithm:expr) => {
+            view! {
+                <p>{$label}": "{move || {
+                    match $algorithm(&timestamps.read())
+                        .inspect_err(|e| log!("{e:?}"))
+                        .ok()
+                    {
+                        Some(bpm) => format!("{bpm:.2}"),
+                        None => "Not Enough Data".into(),
+                    }
+                }}</p>
+            }
+        };
+    }
+
+    view! {
+        <div class="m-auto max-w-3xl text-center font-mono text-3xl">
             <p>"Total Beats: "{move || timestamps.get().len()}</p>
-            <p>"Direct Count Average: "{move || display_bpm_signal(direct_count)}</p>
-            <p>"Least Squares Estimate: "{move || display_bpm_signal(simple_regression)}</p>
-            <p>"Thiel-Sen Estimate: "{move || display_bpm_signal(thiel_sen)}</p>
-        </main>
+            {render_bpm_metric!("Direct Count Average: ", bpm::direct_count)}
+            {render_bpm_metric!("Least Squares Estimate: ", bpm::simple_regression)}
+            {render_bpm_metric!("Thiel-Sen Estimate: ", bpm::thiel_sen)}
+        </div>
     }
 }
