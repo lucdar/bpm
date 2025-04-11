@@ -33,22 +33,6 @@ impl TapData {
     }
 }
 
-/// Helper function to determine if the supplied keycode should add another BPM tap
-fn is_tap_key(key_code: &u32) -> bool {
-    let disabled_keys = [
-        0,  // Unidentified
-        12, // Clear
-        16, // Shift
-        17, // Control
-        18, // Alt
-        20, // CapsLock
-        27, // Escape
-        91, // Meta
-        92, // Meta
-    ];
-    !disabled_keys.contains(key_code)
-}
-
 #[component]
 fn App() -> impl IntoView {
     const RESET_SECS: u64 = 2;
@@ -56,11 +40,8 @@ fn App() -> impl IntoView {
     let (tap_data, set_tap_data) = signal::<TapData>(TapData::default());
     let (active_timeout, set_active_timeout) = signal::<Option<TimeoutHandle>>(None);
 
-    let _cleanup = use_event_listener(use_document(), keydown, move |evt: KeyboardEvent| {
+    let handle_beat_input = move || {
         let now = Instant::now();
-        if !is_tap_key(&evt.key_code()) {
-            return;
-        }
         if let Some(handle) = active_timeout.get() {
             handle.clear();
         }
@@ -73,6 +54,24 @@ fn App() -> impl IntoView {
         .expect("Set timeout should not fail");
         set_active_timeout.set(Some(new_timeout));
         set_tap_data.write().record(now);
+    };
+
+    let _cleanup = use_event_listener(use_document(), keydown, move |evt: KeyboardEvent| {
+        let disabled_keys = [
+            0,  // Unidentified
+            9,  // Tab
+            12, // Clear
+            16, // Shift
+            17, // Control
+            18, // Alt
+            20, // CapsLock
+            27, // Escape
+            91, // Meta
+            92, // Meta
+        ];
+        if !disabled_keys.contains(&evt.key_code()) {
+            handle_beat_input();
+        }
     });
 
     view! {
@@ -92,7 +91,7 @@ fn BpmTable(tap_data: ReadSignal<TapData>) -> impl IntoView {
                         .ok()
                     {
                         Some(bpm) => format!("{bpm:.2}"),
-                        None => "Not Enough Data".into(),
+                        None => "000.00".into(),
                     }
                 }}</p>
             }
@@ -102,9 +101,9 @@ fn BpmTable(tap_data: ReadSignal<TapData>) -> impl IntoView {
     view! {
         <div class="m-auto max-w-3xl text-center font-mono text-3xl">
             <p>"Total Beats: "{move || tap_data.read().timestamps.len()}</p>
-            {render_bpm_metric!("Direct Count Average: ", bpm::direct_count)}
-            {render_bpm_metric!("Least Squares Estimate: ", bpm::simple_regression)}
-            {render_bpm_metric!("Thiel-Sen Estimate: ", bpm::thiel_sen)}
+            {render_bpm_metric!("Direct Count Average", bpm::direct_count)}
+            {render_bpm_metric!("Least Squares Estimate", bpm::simple_regression)}
+            {render_bpm_metric!("Thiel-Sen Estimate", bpm::thiel_sen)}
         </div>
     }
 }
