@@ -1,6 +1,5 @@
 use itertools::Itertools;
 use thiserror::Error;
-use web_time::Instant;
 
 #[derive(Error, Debug)]
 pub enum BpmCalculationError {
@@ -8,40 +7,36 @@ pub enum BpmCalculationError {
     InsufficientData,
 }
 
-pub fn direct_count(timestamps: &[Instant]) -> Result<f64, BpmCalculationError> {
-    if timestamps.len() < 2 {
+pub fn direct_count(offsets: &[u64]) -> Result<f64, BpmCalculationError> {
+    if offsets.len() < 2 {
         return Err(BpmCalculationError::InsufficientData);
     }
 
-    let start = timestamps[0];
-    let end = timestamps.last().unwrap();
-    let delta = end.duration_since(start);
+    let start = offsets[0];
+    let end = offsets.last().unwrap();
+    let delta = end - start;
     // len - 1 is used so only one of start/end is counted
-    let count = (timestamps.len() - 1) as f64;
-    let bpm = count * 60_000_f64 / delta.as_millis() as f64;
+    let count = (offsets.len() - 1) as f64;
+    let bpm = count * 60_000_f64 / delta as f64;
 
     Ok(bpm)
 }
 
-pub fn simple_regression(timestamps: &[Instant]) -> Result<f64, BpmCalculationError> {
+pub fn simple_regression(offsets: &[u64]) -> Result<f64, BpmCalculationError> {
     // Slope of least squares regression line is equal to Cov(x, y) / Var(x)
     // https://seismo.berkeley.edu/~kirchner/eps_120/Toolkits/Toolkit_10.pdf
-    if timestamps.len() < 2 {
+    if offsets.len() < 2 {
         return Err(BpmCalculationError::InsufficientData);
     }
 
-    let start = timestamps[0];
-    let n = timestamps.len() as f64;
+    let (sum_x, sum_x_squared, sum_xy) = offsets
+        .iter()
+        .enumerate()
+        .fold((0_u64, 0_u64, 0_u64), |(sx, sxx, sxy), (y, x)| {
+            (sx + x, sxx + x * x, sxy + (y as u64) * x)
+        });
 
-    let (sum_x, sum_x_squared, sum_xy) =
-        timestamps
-            .iter()
-            .enumerate()
-            .fold((0_u128, 0_u128, 0_u128), |(sx, sxx, sxy), (i, ts)| {
-                let x = ts.duration_since(start).as_millis();
-                (sx + x, sxx + x * x, sxy + (i as u128) * x)
-            });
-
+    let n = offsets.len() as f64;
     let mean_x = sum_x as f64 / n;
     let mean_y = (n - 1_f64) / 2_f64;
 
@@ -52,18 +47,16 @@ pub fn simple_regression(timestamps: &[Instant]) -> Result<f64, BpmCalculationEr
     Ok(slope * 60_000_f64)
 }
 
-pub fn thiel_sen(timestamps: &[Instant]) -> Result<f64, BpmCalculationError> {
+pub fn thiel_sen(offsets: &[u64]) -> Result<f64, BpmCalculationError> {
     // The median of the slopes between every pair of points
     // Increased robustness, asymptotic efficiency (data required to converge)
     // https://en.wikipedia.org/wiki/Theil%E2%80%93Sen_estimator
-    if timestamps.len() < 2 {
+    if offsets.len() < 2 {
         return Err(BpmCalculationError::InsufficientData);
     }
-    let start = timestamps[0];
 
-    let mut slopes: Vec<_> = timestamps
+    let mut slopes: Vec<_> = offsets
         .iter()
-        .map(|ts| ts.duration_since(start).as_millis())
         .enumerate()
         .tuple_combinations()
         // indices (number of beats) are the y-values
