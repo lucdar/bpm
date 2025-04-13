@@ -75,7 +75,18 @@ fn App() -> impl IntoView {
     });
 
     view! {
-        <BpmTable tap_data />
+        <div class="flex flex-col h-screen select-none" on:click={move |_| handle_beat_input()}>
+            <div class="flex justify-center items-center min-h-screen">
+                <pre class="font-mono bg-zinc-800 select-text text-white p-5" on:click={move |e| {
+                    e.prevent_default();
+                    e.stop_propagation();
+                }}>
+                    <Header />
+                    <BpmTable tap_data />
+                    <Footer />
+                </pre>
+            </div>
+        </div>
     }
 }
 
@@ -85,25 +96,47 @@ fn BpmTable(tap_data: ReadSignal<TapData>) -> impl IntoView {
     macro_rules! render_bpm_metric {
         ($label:expr, $algorithm:expr) => {
             view! {
-                <p>{$label}": "{move || {
-                    match $algorithm(&tap_data.read().timestamps)
-                        .inspect_err(|e| log!("{e:?}"))
-                        .ok()
-                    {
-                        Some(bpm) => format!("{bpm:.2}"),
-                        None => "000.00".into(),
-                    }
-                }}</p>
+                <span class="text-green-400">{format!("{:>12}: ", $label)}</span>
+                <span class="text-violet-400">
+                    {move || {
+                        match $algorithm(&tap_data.read().timestamps)
+                            .inspect_err(|e| log!("{e:?}"))
+                            .ok()
+                        {
+                            Some(bpm) => format!("{bpm:6.2}\n"),
+                            None => "000.00\n".into(),
+                        }
+                    }}
+                </span>
+                <span class="text-zinc-400"></span>
             }
         };
     }
 
     view! {
-        <div class="m-auto max-w-3xl text-center font-mono text-3xl">
-            <p>"Total Beats: "{move || tap_data.read().timestamps.len()}</p>
-            {render_bpm_metric!("Direct Count Average", bpm::direct_count)}
-            {render_bpm_metric!("Least Squares Estimate", bpm::simple_regression)}
-            {render_bpm_metric!("Thiel-Sen Estimate", bpm::thiel_sen)}
-        </div>
+        <span>
+            {format!("{:>12}: ", "n")}
+            {move || format!("{:6.2}\n", tap_data.read().timestamps.len())}
+        </span>
+        {render_bpm_metric!("direct", bpm::direct_count)}
+        {render_bpm_metric!("lin-reg", bpm::simple_regression)}
+        {render_bpm_metric!("thiel-sen", bpm::thiel_sen)}
     }
+}
+
+#[component]
+fn Header() -> impl IntoView {
+    // TODO: make this
+    view! {<span>"lucdar's bpm counter\n\n"</span>}
+}
+
+#[component]
+fn Footer() -> impl IntoView {
+    // TODO: make this
+    view! {<span>
+        "\n                                     "
+        "blog"
+        " | "
+        "source"
+    </span>}
 }
