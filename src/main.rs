@@ -1,5 +1,4 @@
 use leptos::ev::{keydown, KeyboardEvent};
-use leptos::logging::log;
 use leptos::prelude::*;
 use leptos::wasm_bindgen::JsCast;
 use leptos::web_sys::Element;
@@ -41,8 +40,7 @@ impl TapData {
 
 #[component]
 fn App() -> impl IntoView {
-    const RESET_SECS: u64 = 2;
-
+    let (reset_sec, set_reset_sec) = signal::<u64>(2);
     let (tap_data, set_tap_data) = signal::<TapData>(TapData::default());
     let (active_timeout, set_active_timeout) = signal::<Option<TimeoutHandle>>(None);
 
@@ -55,7 +53,7 @@ fn App() -> impl IntoView {
             move || {
                 set_tap_data.write().start = None;
             },
-            Duration::from_secs(RESET_SECS),
+            Duration::from_secs(reset_sec.get()),
         )
         .expect("Set timeout should not fail");
         set_active_timeout.set(Some(new_timeout));
@@ -108,11 +106,31 @@ fn App() -> impl IntoView {
                     }}
                 >
                     <span>"lucdar's bpm counter""\n\n"</span>
+                    <ResetControl reset_sec set_reset_sec />
                     <BpmTable tap_data />
                     <Footer tap_data />
                 </pre>
             </div>
         </div>
+    }
+}
+
+#[component]
+fn ResetControl(reset_sec: ReadSignal<u64>, set_reset_sec: WriteSignal<u64>) -> impl IntoView {
+    view! {
+        <span class="text-green-400">"   reset-sec:  "</span>
+        <button class="hover:text-violet-400" on:click={move |_| {
+            if reset_sec.get() < 9 {
+                *set_reset_sec.write() += 1;
+            }
+        }}>"↑"</button>
+        <span class="text-violet-400">" "{move || reset_sec.get()}" "</span>
+        <button class="hover:text-violet-400" on:click={move |_| {
+            if reset_sec.get() > 1 {
+                *set_reset_sec.write() -= 1;
+            }
+        }}>"↓"</button>
+        <span class="text-zinc-400">" # secs before bpm is reset\n\n"</span>
     }
 }
 
@@ -126,11 +144,10 @@ fn BpmTable(tap_data: ReadSignal<TapData>) -> impl IntoView {
                 <span class="text-green-400">
                     {format!("{:>12}: ", $label)}
                 </span>
-                // conditionally color the measurement
                 <span class="text-violet-400">
                     {move || {
                         match $algorithm(&tap_data.read().timestamps)
-                            .inspect_err(|e| log!("{e:?}"))
+                            // .inspect_err(|e| log!("{e:?}"))
                             .ok()
                         {
                             Some(bpm) => format!("{bpm:6.2} "),
