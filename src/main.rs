@@ -1,7 +1,5 @@
 use leptos::ev::{keydown, KeyboardEvent};
 use leptos::prelude::*;
-use leptos::wasm_bindgen::JsCast;
-use leptos::web_sys::Element;
 use leptos_use::{use_document, use_event_listener};
 use web_time::{Duration, Instant};
 
@@ -38,11 +36,35 @@ impl TapData {
     }
 }
 
+#[derive(Debug, Clone)]
+enum BlinkColor {
+    Orange,
+    Violet,
+}
+
+impl BlinkColor {
+    pub fn tw_class(&self) -> &str {
+        match &self {
+            Self::Orange => "border-orange-400",
+            Self::Violet => "border-violet-400",
+        }
+    }
+}
+
 #[component]
 fn App() -> impl IntoView {
     let (reset_sec, set_reset_sec) = signal::<u64>(2);
+    let (border_state, set_border_state) = signal::<Option<BlinkColor>>(None);
     let (tap_data, set_tap_data) = signal::<TapData>(TapData::default());
     let (active_timeout, set_active_timeout) = signal::<Option<TimeoutHandle>>(None);
+
+    let blink_border = move |color: BlinkColor| {
+        set_border_state.set(Some(color));
+        set_timeout(
+            move || set_border_state.set(None),
+            Duration::from_millis(50),
+        );
+    };
 
     let handle_beat_input = move || {
         let now = Instant::now();
@@ -52,12 +74,14 @@ fn App() -> impl IntoView {
         let new_timeout = set_timeout_with_handle(
             move || {
                 set_tap_data.write().start = None;
+                blink_border(BlinkColor::Orange);
             },
             Duration::from_secs(reset_sec.get()),
         )
         .expect("Set timeout should not fail");
         set_active_timeout.set(Some(new_timeout));
         set_tap_data.write().record(now);
+        blink_border(BlinkColor::Violet);
     };
 
     let _cleanup = use_event_listener(use_document(), keydown, move |evt: KeyboardEvent| {
@@ -80,30 +104,18 @@ fn App() -> impl IntoView {
 
     view! {
         <div class="flex flex-col h-screen" on:click={move |_| handle_beat_input()}>
-            <div class="flex justify-center items-center min-h-screen bg-zinc-800">
+            <div class="flex justify-center items-center min-h-screen bg-zinc-800 select-none">
                 <pre
-                    // change border color if reset has happened
+                    // set border color according to border_state
                     class={move || {
-                        let pre_class = "font-mono bg-zinc-800 border-2 select-text text-white p-5";
-                        if tap_data.read().is_reset() {
-                            format!("{pre_class} border-orange-400")
-                        } else {
-                            format!("{pre_class} border-white")
+                        let pre_class = "font-mono bg-zinc-800 border-2 text-white p-5 select-text";
+                        match border_state.get() {
+                            Some(blink_color) => format!("{pre_class} {}", blink_color.tw_class()),
+                            None => format!("{pre_class} border-white transition-colors duration-400"),
                         }
                     }}
-                    on:click={move |e| {
-                        // prevent from triggering bpm click
-                        e.stop_propagation();
-                        // if target is not a button or link, prevent default (selecting text)
-                        if let Some(target) = e.target() {
-                            if let Some(el) = target.dyn_ref::<Element>() {
-                                let tag_name = el.tag_name().to_lowercase();
-                                if tag_name != "a" && tag_name != "button" {
-                                    e.prevent_default();
-                                }
-                            }
-                        }
-                    }}
+                    // prevent clicks in the ui from triggering a beat update
+                    on:click={move |e| e.stop_propagation()}
                 >
                     <span>"lucdar's bpm counter""\n\n"</span>
                     <ResetControl reset_sec set_reset_sec />
