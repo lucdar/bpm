@@ -19,7 +19,7 @@ jobs:
           cargo clippy -- -D warnings
           cargo fmt -- --check
       - name: Download and extract Trunk binary (v0.21.13)
-        run: wget -qO- https://github.com/trunk-rs/trunk/releases/download/v0.21.13/trunk-aarch64-unknown-linux-gnu.tar.gz | tar -xzf-
+        run: wget -qO- https://github.com/trunk-rs/trunk/releases/download/v0.21.13/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
       - name: Create dist worktree
         run: git worktree add .worktrees/dist
       - name: Build with Trunk
