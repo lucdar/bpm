@@ -1,0 +1,44 @@
+name: Build and Trigger Deployment
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install nightly Rust
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: clippy, rustfmt
+      - name: Add WASM target
+        run: rustup target add wasm32-unknown-unknown
+      - name: lint
+        run: |
+          cargo clippy -- -D warnings
+          cargo fmt -- --check
+      - name: Download and extract Trunk binary (v0.21.13)
+        run: wget -qO- https://github.com/trunk-rs/trunk/releases/download/v0.21.13/trunk-aarch64-unknown-linux-gnu.tar.gz | tar -xzf-
+      - name: Create dist worktree
+        run: git worktree add .worktrees/dist
+      - name: Build with Trunk
+        run: ./trunk build --release --public-url "/tools/bpm" --minify
+      - name: Commit new build artifacts to dist branch
+        run: | # TODO: fix this if my PR gets merged :3
+          rm -rf .worktrees/dist/*
+          mv dist/* .worktrees/dist/
+          cd .worktrees/dist/
+          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          git add .
+          git commit -m "Updates" # TODO: expressive commit message
+          git push origin dist
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger laclark.me build
+        run: |
+          curl -X POST -H "Accept: application/vnd.github.v3+json" \
+             -H "Authorization: token ${{ secrets.BUILD_TRIGGER_TOKEN }}" \
+             https://api.github.com/repos/lucdar/laclark.me/dispatches \
+             -d '{"event_type": "trigger-deploy"}'
