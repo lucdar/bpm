@@ -36,8 +36,9 @@ jobs:
       - name: Push changes
         run: |
           git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
-          git push origin dist
-  deploy:
+          git push origin dist --force
+  trigger-deploy:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Trigger laclark.me build
