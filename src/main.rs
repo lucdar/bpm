@@ -1,4 +1,4 @@
-use leptos::ev::{keydown, KeyboardEvent};
+use leptos::ev::{keydown, KeyboardEvent, PointerEvent};
 use leptos::prelude::*;
 use leptos_use::{use_document, use_event_listener};
 use web_time::{Duration, Instant};
@@ -110,7 +110,7 @@ fn App() -> impl IntoView {
                     class={move || {
                         let pre_class = concat!(
                             "font-mono bg-zinc-800 text-white select-text",
-                            "   border-[0.5vw]    px-[3.1vw]    py-[2.3vw]    text-[3.2vw] ",
+                            "   border-[0.5vw]    px-[3.2vw]    py-[2.6vw]    text-[3.0vw] ",
                             "xl:border-[0.3vw] xl:px-[1.7vw] xl:py-[1.4vw] xl:text-[1.6vw] ",
                         );
                         match border_state.get() {
