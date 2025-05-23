@@ -104,11 +104,15 @@ fn App() -> impl IntoView {
 
     view! {
         <div class="flex flex-col h-screen" on:click={move |_| handle_beat_input()}>
-            <div class="flex justify-center items-center min-h-screen bg-zinc-800 select-none">
+            <div class="flex justify-center items-center min-h-screen bg-zinc-800 select-none w-full h-full">
                 <pre
                     // set border color according to border_state
                     class={move || {
-                        let pre_class = "font-mono bg-zinc-800 border-2 text-white p-5 select-text";
+                        let pre_class = concat!(
+                            "font-mono bg-zinc-800 text-white select-text",
+                            "   border-[0.5vw]    px-[3.1vw]    py-[2.3vw]    text-[3.2vw] ",
+                            "xl:border-[0.3vw] xl:px-[1.7vw] xl:py-[1.4vw] xl:text-[1.6vw] ",
+                        );
                         match border_state.get() {
                             Some(blink_color) => format!("{pre_class} {}", blink_color.tw_class()),
                             None => format!("{pre_class} border-white transition-colors duration-400"),
@@ -186,7 +190,7 @@ fn BpmTable(tap_data: ReadSignal<TapData>) -> impl IntoView {
 
 #[component]
 fn Footer(tap_data: ReadSignal<TapData>) -> impl IntoView {
-    let link_class = "hover:text-violet-400 transition-all duration-150";
+    let link_class = "hover:text-violet-400 transition-colors duration-150";
     view! {<span>
         "\n"
         <span class="text-orange-400">
