@@ -1,4 +1,4 @@
-use leptos::ev::{keydown, KeyboardEvent, PointerEvent};
+use leptos::ev::{keydown, KeyboardEvent};
 use leptos::prelude::*;
 use leptos_use::{use_document, use_event_listener};
 use web_time::{Duration, Instant};
