@@ -40,9 +40,9 @@ pub fn simple_regression(offsets: &[u64]) -> Result<f64, BpmCalculationError> {
     let mean_x = sum_x as f64 / n;
     let mean_y = (n - 1_f64) / 2_f64;
 
-    // beats per millisecond
-    let slope =
-        (sum_xy as f64 - n * mean_x * mean_y) / (sum_x_squared as f64 - n * mean_x * mean_x);
+    let slope = // beats per millisecond
+        (sum_xy as f64 - n * mean_x * mean_y) /
+        (sum_x_squared as f64 - n * mean_x * mean_x);
 
     Ok(slope * 60_000_f64)
 }
