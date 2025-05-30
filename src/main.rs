@@ -1,4 +1,4 @@
-use leptos::ev::{keydown, KeyboardEvent};
+use leptos::ev::{keydown, keyup, KeyboardEvent};
 use leptos::prelude::*;
 use leptos_use::{use_document, use_event_listener};
 use web_time::{Duration, Instant};
@@ -57,6 +57,7 @@ fn App() -> impl IntoView {
     let (border_state, set_border_state) = signal::<Option<BlinkColor>>(None);
     let (tap_data, set_tap_data) = signal::<TapData>(TapData::default());
     let (active_timeout, set_active_timeout) = signal::<Option<TimeoutHandle>>(None);
+    let (ctrl_held, set_ctrl_held) = signal::<bool>(false);
 
     let blink_border = move |color: BlinkColor| {
         set_border_state.set(Some(color));
@@ -84,20 +85,27 @@ fn App() -> impl IntoView {
         blink_border(BlinkColor::Violet);
     };
 
+    let _cleanup = use_event_listener(use_document(), keyup, move |evt: KeyboardEvent| {
+        if evt.key_code() == 17 { // Control
+            set_ctrl_held.set(false);
+        }
+    });
+
     let _cleanup = use_event_listener(use_document(), keydown, move |evt: KeyboardEvent| {
         let disabled_keys = [
             0,  // Unidentified
             9,  // Tab
             12, // Clear
             16, // Shift
-            17, // Control
             18, // Alt
             20, // CapsLock
             27, // Escape
             91, // Meta
             92, // Meta
         ];
-        if !disabled_keys.contains(&evt.key_code()) {
+        if evt.key_code() == 17 { // Control
+            set_ctrl_held.set(true);
+        } else if !disabled_keys.contains(&evt.key_code()) && !ctrl_held.get() {
             handle_beat_input();
         }
     });
