@@ -86,7 +86,8 @@ fn App() -> impl IntoView {
     };
 
     let _cleanup = use_event_listener(use_document(), keyup, move |evt: KeyboardEvent| {
-        if evt.key_code() == 17 { // Control
+        // Ctrl is released
+        if evt.key_code() == 17 {
             set_ctrl_held.set(false);
         }
     });
@@ -103,7 +104,8 @@ fn App() -> impl IntoView {
             91, // Meta
             92, // Meta
         ];
-        if evt.key_code() == 17 { // Control
+        // Ctrl is pressed
+        if evt.key_code() == 17 {
             set_ctrl_held.set(true);
         } else if !disabled_keys.contains(&evt.key_code()) && !ctrl_held.get() {
             handle_beat_input();
