@@ -215,6 +215,6 @@ fn Footer(tap_data: ReadSignal<TapData>) -> impl IntoView {
         {" ".repeat(31)}
         <a href="https://laclark.me/blog/bpm/" class={link_class}>blog</a>
         " | "
-        <a href="https://github.com/lucdar/bpm-leptos/" class={link_class}>source</a>
+        <a href="https://github.com/lucdar/bpm/" class={link_class}>source</a>
     </span>}
 }
