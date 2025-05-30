@@ -111,15 +111,15 @@ fn App() -> impl IntoView {
     });
 
     view! {
-        <div class="flex flex-col h-screen" on:click={move |_| handle_beat_input()}>
+        <div class="flex flex-col h-screen" on:mousedown={move |_| handle_beat_input()}>
             <div class="flex justify-center items-center min-h-screen bg-zinc-800 select-none w-full h-full">
                 <pre
                     // set border color according to border_state
                     class={move || {
                         let pre_class = concat!(
                             "font-mono bg-zinc-800 text-white select-text",
-                            "   border-[0.5vw]    px-[3.2vw]    py-[2.6vw]    text-[3.0vw] ",
-                            "xl:border-[0.3vw] xl:px-[1.7vw] xl:py-[1.4vw] xl:text-[1.6vw] ",
+                            "   border-[0.5vw]    px-[3.2vw]    py-[2.5vw]    text-[3.0vw] ",
+                            "xl:border-[0.3vw] xl:px-[1.7vw] xl:py-[1.3vw] xl:text-[1.6vw] ",
                         );
                         match border_state.get() {
                             Some(blink_color) => format!("{pre_class} {}", blink_color.tw_class()),
@@ -127,7 +127,7 @@ fn App() -> impl IntoView {
                         }
                     }}
                     // prevent clicks in the ui from triggering a beat update
-                    on:click={move |e| e.stop_propagation()}
+                    on:mousedown={move |e| e.stop_propagation()}
                 >
                     <span>"lucdar's bpm counter""\n\n"</span>
                     <ResetControl reset_sec set_reset_sec />
@@ -143,13 +143,13 @@ fn App() -> impl IntoView {
 fn ResetControl(reset_sec: ReadSignal<u64>, set_reset_sec: WriteSignal<u64>) -> impl IntoView {
     view! {
         <span class="text-green-400">"   reset-sec:  "</span>
-        <button class="hover:text-violet-400" on:click={move |_| {
+        <button class="hover:text-violet-400" on:mousedown={move |_| {
             if reset_sec.get() < 9 {
                 *set_reset_sec.write() += 1;
             }
         }}>"↑"</button>
         <span class="text-violet-400">" "{move || reset_sec.get()}" "</span>
-        <button class="hover:text-violet-400" on:click={move |_| {
+        <button class="hover:text-violet-400" on:mousedown={move |_| {
             if reset_sec.get() > 1 {
                 *set_reset_sec.write() -= 1;
             }
