@@ -113,11 +113,11 @@ fn App() -> impl IntoView {
     });
 
     view! {
-        <div class="flex flex-col h-screen" on:mousedown={move |_| handle_beat_input()}>
-            <div class="flex justify-center items-center min-h-screen bg-zinc-800 select-none w-full h-full">
+        <div class="flex flex-col h-screen" on:mousedown=move |_| handle_beat_input()>
+            <div class="flex justify-center items-center w-full h-full min-h-screen select-none bg-zinc-800">
                 <pre
                     // set border color according to border_state
-                    class={move || {
+                    class=move || {
                         let pre_class = concat!(
                             "font-mono bg-zinc-800 text-white select-text",
                             "   border-[0.5vw]    px-[3.2vw]    py-[2.5vw]    text-[3.0vw] ",
@@ -125,13 +125,18 @@ fn App() -> impl IntoView {
                         );
                         match border_state.get() {
                             Some(blink_color) => format!("{pre_class} {}", blink_color.tw_class()),
-                            None => format!("{pre_class} border-white transition-colors duration-400"),
+                            None => {
+                                format!("{pre_class} border-white transition-colors duration-400")
+                            }
                         }
-                    }}
+                    }
                     // prevent clicks in the ui from triggering a beat update
-                    on:mousedown={move |e| e.stop_propagation()}
+                    on:mousedown=move |e| e.stop_propagation()
                 >
-                    <span>"lucdar's bpm counter""\n\n"</span>
+                    <span>
+                        "lucdar's bpm counter"
+                        <span class="text-zinc-400">" - tap/type/click to begin!"</span> "\n\n"
+                    </span>
                     <ResetControl reset_sec set_reset_sec />
                     <BpmTable tap_data />
                     <Footer tap_data />
@@ -145,17 +150,27 @@ fn App() -> impl IntoView {
 fn ResetControl(reset_sec: ReadSignal<u64>, set_reset_sec: WriteSignal<u64>) -> impl IntoView {
     view! {
         <span class="text-green-400">"   reset-sec:  "</span>
-        <button class="hover:text-violet-400" on:mousedown={move |_| {
-            if reset_sec.get() < 9 {
-                *set_reset_sec.write() += 1;
+        <button
+            class="hover:text-violet-400"
+            on:mousedown=move |_| {
+                if reset_sec.get() < 9 {
+                    *set_reset_sec.write() += 1;
+                }
             }
-        }}>"↑"</button>
+        >
+            "↑"
+        </button>
         <span class="text-violet-400">" "{move || reset_sec.get()}" "</span>
-        <button class="hover:text-violet-400" on:mousedown={move |_| {
-            if reset_sec.get() > 1 {
-                *set_reset_sec.write() -= 1;
+        <button
+            class="hover:text-violet-400"
+            on:mousedown=move |_| {
+                if reset_sec.get() > 1 {
+                    *set_reset_sec.write() -= 1;
+                }
             }
-        }}>"↓"</button>
+        >
+            "↓"
+        </button>
         <span class="text-zinc-400">" # secs before bpm is reset\n\n"</span>
     }
 }
@@ -201,20 +216,16 @@ fn BpmTable(tap_data: ReadSignal<TapData>) -> impl IntoView {
 #[component]
 fn Footer(tap_data: ReadSignal<TapData>) -> impl IntoView {
     let link_class = "hover:text-violet-400 transition-colors duration-150";
-    view! {<span>
-        "\n"
-        <span class="text-orange-400">
-            {move ||
-                if tap_data.read().is_reset() {
-                    "reset!"
-                } else {
-                    "      "
-                }
-            }
+    view! {
+        <span>
+            "\n"
+            <span class="text-orange-400">
+                {move || if tap_data.read().is_reset() { "reset!" } else { "      " }}
+            </span> {" ".repeat(31)} <a href="https://laclark.me/blog/bpm/" class=link_class>
+                blog
+            </a> " | " <a href="https://github.com/lucdar/bpm/" class=link_class>
+                source
+            </a>
         </span>
-        {" ".repeat(31)}
-        <a href="https://laclark.me/blog/bpm/" class={link_class}>blog</a>
-        " | "
-        <a href="https://github.com/lucdar/bpm/" class={link_class}>source</a>
-    </span>}
+    }
 }
