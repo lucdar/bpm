@@ -1,17 +1,8 @@
-<!DOCTYPE html>
-<html lang = "en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, user-scalable=no">
-    <link data-trunk rel="rust" data-wasm-opt="z" />
-    <!-- <link data-trunk rel="icon" type="image/ico" href="/public/favicon.ico" /> -->
-    <link data-trunk rel="tailwind-css" href="/style/tailwind.css" />
-    <script
-      data-goatcounter="https://lucdar.goatcounter.com/count"
-      async
-      src="https://laclark.me/js/count.js"
-    ></script>
-    <title>bpm counter</title>
-  </head>
-  <body></body>
-</html>
+<!doctype html><html lang=en><meta charset=utf-8><meta content="width=device-width,user-scalable=no" name=viewport><script type=module>import init, * as bindings from '/tools/bpm/bpm-leptos-16b52a1af5728cf6.js';
+const wasm = await init({ module_or_path: '/tools/bpm/bpm-leptos-16b52a1af5728cf6_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));</script><link href=/tools/bpm/tailwind-8ea6d6de23ae82f7.css integrity=sha384-wvx2cTqMh4YbPAK/BNXGhSqlGRXq22p415KFl1ia5WrGjG33LaaiN5ynZP67buEZ rel=stylesheet><script async data-goatcounter=https://lucdar.goatcounter.com/count src=https://laclark.me/js/count.js></script><title>bpm counter</title><link crossorigin href=/tools/bpm/bpm-leptos-16b52a1af5728cf6.js integrity=sha384-2tvJUV8veaYUOgo7UrIWKVWhIDK0WvVc9Y0+Sk9KRNGarvqytAGMBLLTJf2Web48 rel=modulepreload><link as=fetch crossorigin href=/tools/bpm/bpm-leptos-16b52a1af5728cf6_bg.wasm integrity=sha384-lNUku7EFb+cWf3zwzl5EqHU0eBVal1hI9hKD6cmwk1BtZC6sCmfWrRF54BMo7tZ3 rel=preload type=application/wasm></head><body></body></html>
