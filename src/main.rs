@@ -34,6 +34,10 @@ impl TapData {
     pub fn is_reset(&self) -> bool {
         self.start.is_none() && !self.timestamps.is_empty()
     }
+    /// Returns true if no tap events have ever been recorded
+    pub fn has_no_taps(&self) -> bool {
+        self.timestamps.is_empty()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -134,8 +138,9 @@ fn App() -> impl IntoView {
                     on:mousedown=move |e| e.stop_propagation()
                 >
                     <span>
-                        "lucdar's bpm counter"
-                        <span class="text-zinc-400">" - tap/type/click to begin!"</span> "\n\n"
+                        "lucdar's bpm counter" <Show when=move || tap_data.read().has_no_taps()>
+                            <span class="text-zinc-400">" - tap/type/click to begin!"</span>
+                        </Show> "\n\n"
                     </span>
                     <ResetControl reset_sec set_reset_sec />
                     <BpmTable tap_data />
