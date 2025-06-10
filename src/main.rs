@@ -227,9 +227,9 @@ fn Footer(tap_data: ReadSignal<TapData>) -> impl IntoView {
             <span class="text-orange-400">
                 {move || if tap_data.read().is_reset() { "reset!" } else { "      " }}
             </span> {" ".repeat(31)} <a href="https://laclark.me/blog/bpm/" class=link_class>
-                blog
+                "blog"
             </a> " | " <a href="https://github.com/lucdar/bpm/" class=link_class>
-                source
+                "source"
             </a>
         </span>
     }
